@@ -30,11 +30,13 @@ var(
 )
 
 
-func Run(election chan int){
+func Run(election chan uint, echo chan network.Echo, idProc uint){
 
 	var msgChannel chan network.Message
 
 	var ackChannel chan network.Acknowledge
+
+	id = idProc
 
 	go network.ClientReader(id,msgChannel,ackChannel)
 
@@ -56,6 +58,9 @@ func Run(election chan int){
 				}
 
 
+		}
+		if state == RESULT {
+			election<-elected
 		}
 	}
 }
@@ -182,6 +187,19 @@ func sendAck(localId uint,remoteId uint){
 	time.Sleep(time.Duration(config.GetTransmitDelay()) * time.Second)
 
 	network.ClientWriter(localId,remoteId,buf)
+
+
+}
+
+func pingElected(elected uint){
+
+	var buf bytes.Buffer
+
+	if err := gob.NewEncoder(&buf).Encode(network.Acknowledge{}); err != nil {
+		fmt.Println(err)
+	}
+
+	network.ClientWriter(id,elected,buf)
 
 
 }

@@ -39,6 +39,7 @@ type configuration struct {
 
 func GetAdressById(id uint) *net.UDPAddr{
 
+	id = id%config.NumberOfProcesses
 	var localAdrr = new(net.UDPAddr)
 
 	localAdrr.IP = net.ParseIP(config.Address[id].Ip)

@@ -18,7 +18,10 @@ type Aptitude struct {
 
 type Acknowledge struct {
 
-	Id uint
+}
+
+type Echo struct{
+
 }
 
 type Message struct{
