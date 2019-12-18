@@ -25,50 +25,82 @@ type acknowledge struct {
 
 func ClientWriter(remoteId uint,buf bytes.Buffer)bool {
 
+	fmt.Println(remoteId)
 	var remoteAddress = config.GetAdressById(remoteId)
 	buffer := make([]byte, 1024)
 	conn, err := net.Dial("udp", remoteAddress.String())
 	if err != nil {
+
 		log.Fatal(err)
 	}
 	defer conn.Close()
-	_,err = conn.Write(buf.Bytes())
 
-	deadline := time.Now().Add(config.GetWaitingAckdelay())
-	err = conn.SetReadDeadline(deadline)
+	_, err = conn.Write(buf.Bytes())
+	if err != nil {
 
+		log.Fatal(err)
+	}
+
+	deadline := time.Now().Add(200* time.Millisecond)
+	conn.SetReadDeadline(deadline)
 	var ack acknowledge
-
 	for {
-
-		n ,err := conn.Read(buffer)
-
+		n, err := conn.Read(buffer)
 		if err != nil {
-		fmt.Println(err)
-		return false
+			if e, ok := err.(net.Error); !ok || !e.Timeout() {
+				fmt.Println(err)
+				fmt.Println(remoteId)
+				//	log.Fatal(err)
+			}
+			fmt.Println(err)
+			return false
 		}
-
 		if err := gob.NewDecoder(bytes.NewReader(buffer[:n])).Decode(&ack); err != nil {
 			fmt.Println("test")
 			return false
 		}
 		fmt.Println(ack)
+
 		return true
 	}
+
+
+
 }
 
 func ClientReader(localId uint, msgChannel chan Message) {
 
+
 	var address = config.GetAdressById(localId)
-
-	conn, err := net.ListenPacket("udp", address.String())
-
+	conn, err := net.ListenPacket("udp",address.String())
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("Listen on " + address.String())
 	defer conn.Close()
+	buffer := make([]byte, 1024)
+	for {
+		n, cliAddr, err := conn.ReadFrom(buffer)
+		if err != nil {
+			log.Fatal(err)
+		}
+		var result Message
+		if err := gob.NewDecoder(bytes.NewReader(buffer[:n])).Decode(&result); err != nil {
+		}
 
-	decrypt(conn,msgChannel)
+
+
+		var buffer bytes.Buffer
+
+		if err := gob.NewEncoder(&buffer).Encode(acknowledge{true}); err != nil {
+			fmt.Println(err)
+		}
+			_,err = conn.WriteTo(buffer.Bytes(),cliAddr)
+			fmt.Println(err)
+
+		msgChannel <- result
+		}
+
 
 }
 

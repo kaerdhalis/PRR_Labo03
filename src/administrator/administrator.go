@@ -133,7 +133,7 @@ func sendMessage(buf bytes.Buffer){
 	//time.Sleep(config.GetTransmitDelay())
 	for  {
 		remoteId%=config.GetNumberOfProc()
-		if !network.ClientWriter(remoteId,buf){
+		if network.ClientWriter(remoteId,buf)==false{
 			fmt.Println("no connection")
 			remoteId++
 		} else {

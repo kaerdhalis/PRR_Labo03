@@ -1,8 +1,8 @@
 {
   "NumberOfProcesses": 2,
   "Process": [
-    {"ip":"127.0.0.1","port": 6666, "aptitude": 7},
-    {"ip":"127.0.0.1","port": 6667, "aptitude": 13},
+    {"ip":"127.0.0.1","port": 7000, "aptitude": 7},
+    {"ip":"127.0.0.1","port": 7001, "aptitude": 13},
     {"ip":"127.0.0.1","port": 6668, "aptitude": 5},
     {"ip":"127.0.0.1","port": 6669, "aptitude": 9},
     {"ip":"127.0.0.1","port": 6670, "aptitude": 2}
