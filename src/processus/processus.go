@@ -35,13 +35,17 @@ func main() {
 
 	election := make(chan uint)
 	echo := make(chan network.Echo)
+	launchElection := make(chan bool)
 
 	var elected uint
 
 	//get the global configuration of the application
 	config.SetConfiguration()
 
-	go administrator.Run(election,echo, uint(id))
+	go administrator.Run(election,echo, uint(id),launchElection)
+	go getElectedProcess(election)
+	launchElection <-true
+
 
 	for{
 
@@ -61,12 +65,20 @@ func main() {
 
 			case <- time.After(time.Duration(config.GetArtificialDelay())):
 
-				election<- 1
+				launchElection<- true
 		}
 
 
 
 	}
+}
+
+func getElectedProcess(election chan uint){
+	for   {
+		fmt.Printf("processus elu = %d\n",<-election)
+
+	}
+
 }
 
 

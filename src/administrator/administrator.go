@@ -30,21 +30,21 @@ var(
 )
 
 
-func Run(election chan uint, echo chan network.Echo, idProc uint){
+func Run(election chan uint, echo chan network.Echo, idProc uint,electionLaunch chan bool){
 
-	var msgChannel chan network.Message
+	var msgChannel =make(chan network.Message)
 
-	var ackChannel chan network.Acknowledge
+	var ackChannel = make(chan network.Acknowledge)
 
 	id = idProc
-
+	aptitude = config.GetAptById(id)
 	go network.ClientReader(id,msgChannel,ackChannel,echo)
 
 	for   {
 
 		select {
 
-			case <-election:
+			case <-electionLaunch:
 				electionRequest(ackChannel)
 
 			case message := <- msgChannel:
@@ -130,7 +130,9 @@ func resultHandle(msg  network.Message,ackChannel chan network.Acknowledge){
 
 func sendMessage(localId uint, remoteId uint,buf bytes.Buffer,ackChannel chan network.Acknowledge){
 
+	remoteId %=config.GetNumberOfProc()
 	time.Sleep(time.Duration(config.GetTransmitDelay()) * time.Second)
+
 
 	network.ClientWriter(localId,remoteId,buf)
 
@@ -138,7 +140,9 @@ func sendMessage(localId uint, remoteId uint,buf bytes.Buffer,ackChannel chan ne
 
 	case <-ackChannel:
 
-	case <- time.After(time.Duration(2*config.GetTransmitDelay())*time.Second):
+	case <- time.After(time.Duration(3*config.GetTransmitDelay())*time.Second):
+
+
 
 		sendMessage(localId,remoteId+1,buf,ackChannel)
 	}

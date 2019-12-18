@@ -1,12 +1,12 @@
 {
-  "NumberOfProcesses": 5,
-  "address": [
-    {"ip":"127.0.0.1","port": 5555},
-    {"ip":"127.0.0.1","port": 5556},
-    {"ip":"127.0.0.1","port": 5557},
-    {"ip":"127.0.0.1","port": 5558},
-    {"ip":"127.0.0.1","port": 5559}
+  "NumberOfProcesses": 2,
+  "Process": [
+    {"ip":"127.0.0.1","port": 6666, "aptitude": 7},
+    {"ip":"127.0.0.1","port": 6667, "aptitude": 3},
+    {"ip":"127.0.0.1","port": 6668, "aptitude": 5},
+    {"ip":"127.0.0.1","port": 6669, "aptitude": 9},
+    {"ip":"127.0.0.1","port": 6670, "aptitude": 2}
   ],
-   "ArtificialDelay": 5,
-   "TransmitDelay" : 2
+   "ArtificialDelay": 1,
+   "TransmitDelay" : 1
 }

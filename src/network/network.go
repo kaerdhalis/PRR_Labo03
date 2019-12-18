@@ -1,13 +1,12 @@
 package network
 
 import (
+	"../config"
 	"bytes"
 	"encoding/gob"
 	"fmt"
 	"log"
 	"net"
-	"../config"
-	"time"
 )
 
 
@@ -33,10 +32,10 @@ type Message struct{
 
 func ClientWriter(localId uint,remoteId uint,buf bytes.Buffer) {
 
-	var localAddress = config.GetAdressById(localId)
+	//var localAddress = config.GetAdressById(localId)
 	var remoteAddress = config.GetAdressById(remoteId)
 
-	conn, err := net.DialUDP("udp",localAddress, remoteAddress)
+	conn, err := net.DialUDP("udp",nil, remoteAddress)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,7 +46,9 @@ func ClientWriter(localId uint,remoteId uint,buf bytes.Buffer) {
 func ClientReader(localId uint, msgChannel chan Message,ackChannel chan Acknowledge,echo chan Echo) {
 	// error testing suppressed to compact listing on slides
 
+
 	var address = config.GetAdressById(localId)
+	fmt.Println(address.String())
 	conn, err := net.ListenUDP("udp", address)
 
 	if err != nil {
@@ -66,7 +67,6 @@ func decrypt(conn *net.UDPConn ,msgChannel chan Message, ackChannel chan Acknowl
 	for {
 
 		var ack Acknowledge
-		var msg Message
 		var result Message
 		var echo Echo
 		n, _, err := conn.ReadFromUDP(buf) // n,addr, err := p.ReadFrom(buf)
@@ -75,34 +75,19 @@ func decrypt(conn *net.UDPConn ,msgChannel chan Message, ackChannel chan Acknowl
 		}
 
 		if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&ack); err == nil {
+			fmt.Print(ack)
+			fmt.Println("testack")
 
 			ackChannel<-ack
 
-		}else if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&msg); err != nil {
+		}else if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&result); err == nil {
 
+			fmt.Print(result)
+			fmt.Println("testresult")
 			msgChannel <- result
 
-		}else if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&echo); err != nil {
+		}else if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&echo); err == nil {
 
-		}
-	}
-}
-
-
-// Create a connection with a process to check if its ready
-func PingAdress(address *net.UDPAddr,id uint) {
-
-	timeout := 1 * time.Second
-	for {
-
-		conn, err := net.DialTimeout("tcp", address.String(), timeout)
-		if err != nil {
-
-		} else {
-
-			fmt.Printf("Processus %d is Up and Ready\n",id)
-			conn.Close()
-			break
 		}
 	}
 }

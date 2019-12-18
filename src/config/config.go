@@ -20,17 +20,18 @@ import (
 var config configuration
 
 //struct representing the adress from the json file
-type IpAdress struct {
+type Process struct {
 
 	Ip string
 	Port uint
+	Aptitude uint
 
 }
 
 // Configuration struct represents all configurations from the json file
 type configuration struct {
 	NumberOfProcesses uint
-	Address []IpAdress
+	Process []Process
 	ArtificialDelay uint
 	TransmitDelay uint
 }
@@ -41,10 +42,18 @@ func GetAdressById(id uint) *net.UDPAddr{
 	id = id%config.NumberOfProcesses
 	var localAdrr = new(net.UDPAddr)
 
-	localAdrr.IP = net.ParseIP(config.Address[id].Ip)
-	localAdrr.Port =int(config.Address[id].Port)
+	localAdrr.IP = net.ParseIP(config.Process[id].Ip)
+	localAdrr.Port =int(config.Process[id].Port)
 
 	return localAdrr
+}
+
+func GetAptById(id uint) uint{
+
+	id = id%config.NumberOfProcesses
+
+
+	return config.Process[id].Aptitude
 }
 
 //read the json file and stock the values
