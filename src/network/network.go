@@ -7,91 +7,93 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 )
-
-
-type Aptitude struct {
-	 Id uint
-	 Apt uint
+type AptList struct {
+	Id uint
+	Apt uint
+}
+type Message struct{
+	MsgType bool
+	List [] AptList
+	Elected int
 }
 
-type Acknowledge struct {
-
+type acknowledge struct {
 	Ack bool
 }
 
-type Echo struct{
+func ClientWriter(remoteId uint,buf bytes.Buffer)bool {
 
-}
-
-type Message struct{
-	MsgType bool
-	List [] Aptitude
-	Elected int
-	SenderId uint
-}
-
-func ClientWriter(localId uint,remoteId uint,buf bytes.Buffer) {
-
-	//var localAddress = config.GetAdressById(localId)
 	var remoteAddress = config.GetAdressById(remoteId)
-
-	conn, err := net.DialUDP("udp",nil, remoteAddress)
+	buffer := make([]byte, 1024)
+	conn, err := net.Dial("udp", remoteAddress.String())
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer conn.Close()
-	_, err  = buf.WriteTo(conn)
+	_,err = conn.Write(buf.Bytes())
+
+	deadline := time.Now().Add(config.GetWaitingAckdelay())
+	err = conn.SetReadDeadline(deadline)
+
+	var ack acknowledge
+
+	for {
+
+		n ,err := conn.Read(buffer)
+
+		if err != nil {
+		fmt.Println(err)
+		return false
+		}
+
+		if err := gob.NewDecoder(bytes.NewReader(buffer[:n])).Decode(&ack); err != nil {
+			fmt.Println("test")
+			return false
+		}
+		fmt.Println(ack)
+		return true
+	}
 }
 
-func ClientReader(localId uint, msgChannel chan Message,ackChannel chan Acknowledge,echo chan Echo) {
-	// error testing suppressed to compact listing on slides
-
+func ClientReader(localId uint, msgChannel chan Message) {
 
 	var address = config.GetAdressById(localId)
-	fmt.Println(address.String())
-	conn, err := net.ListenUDP("udp", address)
+
+	conn, err := net.ListenPacket("udp", address.String())
 
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer conn.Close()
 
-	decrypt(conn,msgChannel,ackChannel,echo)
+	decrypt(conn,msgChannel)
 
 }
 
-func decrypt(conn *net.UDPConn ,msgChannel chan Message, ackChannel chan Acknowledge,echo chan Echo){
-
+func decrypt(conn net.PacketConn ,msgChannel chan Message) {
 
 	buf := make([]byte, 1024)
 	for {
 
-		var ack Acknowledge
 		var result Message
-		var echo Echo
-		n, _, err := conn.ReadFromUDP(buf) // n,addr, err := p.ReadFrom(buf)
+		n, ip, err := conn.ReadFrom(buf)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&ack); err == nil {
-			fmt.Print(ack)
-			fmt.Println("testack")
+		if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&result); err == nil {
 
-			ackChannel<-ack
-
-		}else if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&result); err == nil {
-
-			fmt.Print(result)
-			fmt.Println("testresult")
 			msgChannel <- result
+			var buffer bytes.Buffer
 
-		}else if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&echo); err == nil {
-
+			if err := gob.NewEncoder(&buffer).Encode(acknowledge{true}); err != nil {
+				fmt.Println(err)
+			}
+			_,err := conn.WriteTo(buffer.Bytes(),ip)
+			fmt.Println(err)
 		}
-
-
 	}
-}
 
+}

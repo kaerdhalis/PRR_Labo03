@@ -1,7 +1,7 @@
 /**
  * Title: 			Labo2 - Mutual exclusion
- * File:			client.go
- * Date:			20.11.12
+ * File:			processus.go
+ * Date:			18.12.12
  * Authors:			Le Guillou Benjamin, Reis de Carvalho Luca
  *
  * Description:		File containing the client side of the process. It can read the inputs of the users and read or
@@ -10,10 +10,8 @@
 package main
 
 import (
-	"../config"
 	"../administrator"
-	"../network"
-
+	"../config"
 	"fmt"
 	"log"
 	"os"
@@ -32,49 +30,32 @@ func main() {
 	}
 	id,_ := strconv.Atoi(args[0])
 
-	election := make(chan uint)
-	echo := make(chan network.Echo)
-	launchElection := make(chan bool)
+	elected := make(chan uint)
 
-	//var elected uint
+	launchElection := make(chan bool)
 
 	//get the global configuration of the application
 	config.SetConfiguration()
 
-	go administrator.Run(election,echo, uint(id),launchElection)
-	go getElectedProcess(election)
+	go administrator.Run(elected, uint(id),launchElection)
+
+	go getElectedProcess(elected)
+	fmt.Println("launch election")
 	launchElection <-true
 
 
 	for{
 
-		time.Sleep(time.Duration(config.GetArtificialDelay()))
-
-		//var buf bytes.Buffer
-
-		//if err := gob.NewEncoder(&buf).Encode(network.Echo{}); err != nil {
-		//	fmt.Println(err)
-		//}
-
-		//network.ClientWriter(uint(id),elected,buf)
-
-		//select {
-		//
-		//	case <-echo:
-		//
-		//	case <- time.After(time.Duration(config.GetArtificialDelay())):
-		//
-		//		//launchElection<- true
-		//}
-
-
+		time.Sleep(500* config.GetArtificialDelay())
+				fmt.Println("launch election")
+				launchElection<- true
 
 	}
 }
 
-func getElectedProcess(election chan uint){
+func getElectedProcess(elected chan uint){
 	for   {
-		fmt.Printf("processus elu = %d\n",<-election)
+		fmt.Printf("processus elu = %d\n",<-elected)
 
 	}
 

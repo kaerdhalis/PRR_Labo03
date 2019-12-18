@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 )
 
 // contains all the values of configuration
@@ -79,13 +80,18 @@ func GetNumberOfProc() uint{
 	return config.NumberOfProcesses
 }
 
-func GetArtificialDelay() uint{
+func GetArtificialDelay() time.Duration{
 
-	return config.ArtificialDelay
+	return time.Duration(config.ArtificialDelay)*time.Second
 }
 
-func GetTransmitDelay()  uint{
+func GetTransmitDelay()  time.Duration{
 
-	return config.TransmitDelay
+	return time.Duration(config.TransmitDelay)*time.Second
+}
+
+func GetWaitingAckdelay() time.Duration{
+
+	return time.Duration(2*config.TransmitDelay)*time.Second
 }
 

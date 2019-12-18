@@ -1,13 +1,14 @@
 package administrator
 
 import (
+	"../config"
+	"../network"
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"../network"
-	"../config"
-	"time"
 )
+
+
 
 const(
 	ANNOUNCE = 0
@@ -20,39 +21,35 @@ const(
 
 var(
 
-	nbProcess int
 	id uint
 	aptitude uint
-	next int
 	state int
-	elected int
-	aptList [] network.Aptitude
+	electedID  =-1
 )
 
 
-func Run(election chan uint, echo chan network.Echo, idProc uint,electionLaunch chan bool){
+func Run(elected chan uint, idProc uint,electionLaunch chan bool){
 
 	var msgChannel =make(chan network.Message)
 
-	var ackChannel = make(chan network.Acknowledge)
-
 	id = idProc
 	aptitude = config.GetAptById(id)
-	go network.ClientReader(id,msgChannel,ackChannel,echo)
+
+	go network.ClientReader(id,msgChannel)
 
 	for   {
 
 		select {
 
 			case <-electionLaunch:
-				electionRequest(ackChannel)
+				electionRequest()
 
 			case message := <- msgChannel:
 				if message.MsgType == RES{
 
-					resultHandle(message,ackChannel)
+					resultHandle(message)
 				}else {
-					announceHandle(message,ackChannel)
+					announceHandle(message)
 
 
 				}
@@ -60,152 +57,116 @@ func Run(election chan uint, echo chan network.Echo, idProc uint,electionLaunch 
 
 		}
 		if state == RESULT {
-			election<- uint(elected)
+			elected<- uint(electedID)
 		}
 	}
 }
 
-func electionRequest(ackChannel chan network.Acknowledge){
+func electionRequest(){
 
-	sendAnnounce(ackChannel)
+	var aptlist = []network.AptList{{id,aptitude}}
+	sendAnnounce(aptlist)
 	state = ANNOUNCE
 
 }
 
-func announceHandle(msg  network.Message,ackChannel chan network.Acknowledge){
+func announceHandle(msg  network.Message){
+	fmt.Println("received announce")
+	fmt.Println(msg)
+	var aptList = msg.List
+	for _,proc:= range aptList{
 
-	sendAck(id,msg.SenderId)
+		if proc.Id ==id && proc.Apt ==aptitude{
 
-	aptList = msg.List
-	for _,apt:= range aptList  {
+			var maxApt uint =0
+			for i,proc:= range aptList {
 
-		if apt.Id ==id && apt.Apt ==aptitude{
-
-			var apti uint =0
-			for i,apt:= range aptList {
-
-				if apt.Apt > apti{
-					apti = apt.Apt
-					elected = i
+				if proc.Apt > maxApt{
+					maxApt = proc.Apt
+					electedID = i
 				}
 			}
-
-			sendResult(elected,ackChannel)
+			var aptList = []network.AptList{{id,aptitude}}
+			sendResult(electedID,aptList)
 			state = RESULT
+
 			return
 		}
 	}
 
-	sendAnnounce(ackChannel)
+	sendAnnounce(aptList)
 	state = ANNOUNCE
 }
 
-func resultHandle(msg  network.Message,ackChannel chan network.Acknowledge){
+func resultHandle(msg  network.Message){
 
-	sendAck(id,msg.SenderId)
+	fmt.Println("received result")
+	fmt.Println(msg)
+	var aptList = msg.List
+	for _,proc:= range aptList  {
 
-	for _,apt:= range aptList  {
-
-		if apt.Id ==id && apt.Apt ==aptitude{
+		if proc.Id ==id && proc.Apt ==aptitude{
 
 			state = NO
 			return
 		}
 	}
 
-	if state == RESULT && elected !=msg.Elected{
+	if state == RESULT && electedID !=msg.Elected{
 
-		sendAnnounce(ackChannel)
+		sendAnnounce(aptList)
 		state = ANNOUNCE
 	} else if state == ANNOUNCE{
-		elected =msg.Elected
-		sendResult(elected,ackChannel)
+		electedID =msg.Elected
+		sendResult(electedID,aptList)
 		state = RESULT
 	}
 
-	sendAnnounce(ackChannel)
+	sendAnnounce(aptList)
 	state = ANNOUNCE
 }
 
 
-func sendMessage(localId uint, remoteId uint,buf bytes.Buffer,ackChannel chan network.Acknowledge){
+func sendMessage(buf bytes.Buffer){
 
-	remoteId %=config.GetNumberOfProc()
-	time.Sleep(time.Duration(config.GetTransmitDelay()) * time.Second)
-
-
-	network.ClientWriter(localId,remoteId,buf)
-
-	select {
-
-	case <-ackChannel:
-
-		fmt.Println("tetsts")
-		return
-	case <- time.After(time.Duration(3*config.GetTransmitDelay())*time.Second):
-
-
-
-		sendMessage(localId,remoteId+1,buf,ackChannel)
+	var remoteId =id+1
+	//time.Sleep(config.GetTransmitDelay())
+	for  {
+		remoteId%=config.GetNumberOfProc()
+		if !network.ClientWriter(remoteId,buf){
+			fmt.Println("no connection")
+			remoteId++
+		} else {
+			return
+		}
 	}
+
 
 }
 
 
-func sendResult(elected int,ackChannel chan network.Acknowledge){
+func sendResult(elected int,aptList [] network.AptList){
 
-
+	fmt.Println("send result")
 	var buf bytes.Buffer
-
-	aptList = append(aptList,network.Aptitude{id,aptitude})
 
 	if err := gob.NewEncoder(&buf).Encode(network.Message{List: aptList, Elected: elected}); err != nil {
 		fmt.Println(err)
 	}
-	sendMessage(id,id+1,buf,ackChannel)
+	sendMessage(buf)
 
 }
 
-func sendAnnounce(ackChannel chan network.Acknowledge){
+func sendAnnounce(aptList [] network.AptList){
 
-
+	fmt.Println("send announce")
 	var buf bytes.Buffer
 
-	aptList = append(aptList,network.Aptitude{id,aptitude})
 
 	if err := gob.NewEncoder(&buf).Encode(network.Message{List: aptList, Elected: -1}); err != nil {
 		fmt.Println(err)
 	}
-	sendMessage(id,id+1,buf,ackChannel)
+	sendMessage(buf)
 }
 
-func sendAck(localId uint,remoteId uint){
-
-
-
-	var buf bytes.Buffer
-
-	if err := gob.NewEncoder(&buf).Encode(network.Acknowledge{true}); err != nil {
-		fmt.Println(err)
-	}
-
-	time.Sleep(time.Duration(config.GetTransmitDelay()) * time.Second)
-
-	network.ClientWriter(localId,remoteId,buf)
-
-
-}
-//
-//func pingElected(elected uint){
-//
-//	var buf bytes.Buffer
-//
-//	if err := gob.NewEncoder(&buf).Encode(network.Acknowledge{}); err != nil {
-//		fmt.Println(err)
-//	}
-//
-//	network.ClientWriter(id,elected,buf)
-//
-//
-//}
 
