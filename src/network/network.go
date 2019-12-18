@@ -27,7 +27,7 @@ type Echo struct{
 type Message struct{
 	MsgType bool
 	List [] Aptitude
-	Elected uint
+	Elected int
 	SenderId uint
 }
 
@@ -44,7 +44,7 @@ func ClientWriter(localId uint,remoteId uint,buf bytes.Buffer) {
 	_, err  = buf.WriteTo(conn)
 }
 
-func ClientReader(localId uint, msgChannel chan Message,ackChannel chan Acknowledge) {
+func ClientReader(localId uint, msgChannel chan Message,ackChannel chan Acknowledge,echo chan Echo) {
 	// error testing suppressed to compact listing on slides
 
 	var address = config.GetAdressById(localId)
@@ -55,11 +55,11 @@ func ClientReader(localId uint, msgChannel chan Message,ackChannel chan Acknowle
 	}
 	defer conn.Close()
 
-	decrypt(conn,msgChannel,ackChannel)
+	decrypt(conn,msgChannel,ackChannel,echo)
 
 }
 
-func decrypt(conn *net.UDPConn ,msgChannel chan Message, ackChannel chan Acknowledge){
+func decrypt(conn *net.UDPConn ,msgChannel chan Message, ackChannel chan Acknowledge,echo chan Echo){
 
 
 	buf := make([]byte, 1024)
@@ -68,6 +68,7 @@ func decrypt(conn *net.UDPConn ,msgChannel chan Message, ackChannel chan Acknowl
 		var ack Acknowledge
 		var msg Message
 		var result Message
+		var echo Echo
 		n, _, err := conn.ReadFromUDP(buf) // n,addr, err := p.ReadFrom(buf)
 		if err != nil {
 			log.Fatal(err)
@@ -80,6 +81,9 @@ func decrypt(conn *net.UDPConn ,msgChannel chan Message, ackChannel chan Acknowl
 		}else if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&msg); err != nil {
 
 			msgChannel <- result
+
+		}else if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&echo); err != nil {
+
 		}
 	}
 }

@@ -1,0 +1,12 @@
+{
+  "NumberOfProcesses": 5,
+  "address": [
+    {"ip":"127.0.0.1","port": 5555},
+    {"ip":"127.0.0.1","port": 5556},
+    {"ip":"127.0.0.1","port": 5557},
+    {"ip":"127.0.0.1","port": 5558},
+    {"ip":"127.0.0.1","port": 5559}
+  ],
+   "ArtificialDelay": 5,
+   "TransmitDelay" : 2
+}

@@ -19,8 +19,6 @@ import (
 // contains all the values of configuration
 var config configuration
 
-var transmitDelay float64 = 0
-
 //struct representing the adress from the json file
 type IpAdress struct {
 
@@ -34,6 +32,7 @@ type configuration struct {
 	NumberOfProcesses uint
 	Address []IpAdress
 	ArtificialDelay uint
+	TransmitDelay uint
 }
 
 
@@ -76,13 +75,8 @@ func GetArtificialDelay() uint{
 	return config.ArtificialDelay
 }
 
-func SetTransmitdelay(delay float64){
+func GetTransmitDelay()  uint{
 
-	transmitDelay = delay
-}
-
-func GetTransmitDelay()  float64{
-
-	return transmitDelay
+	return config.TransmitDelay
 }
 

@@ -25,7 +25,7 @@ var(
 	aptitude uint
 	next int
 	state int
-	elected uint
+	elected int
 	aptList [] network.Aptitude
 )
 
@@ -38,7 +38,7 @@ func Run(election chan uint, echo chan network.Echo, idProc uint){
 
 	id = idProc
 
-	go network.ClientReader(id,msgChannel,ackChannel)
+	go network.ClientReader(id,msgChannel,ackChannel,echo)
 
 	for   {
 
@@ -60,7 +60,7 @@ func Run(election chan uint, echo chan network.Echo, idProc uint){
 
 		}
 		if state == RESULT {
-			election<-elected
+			election<- uint(elected)
 		}
 	}
 }
@@ -86,7 +86,7 @@ func announceHandle(msg  network.Message,ackChannel chan network.Acknowledge){
 
 				if apt.Apt > apti{
 					apti = apt.Apt
-					elected = uint(i)
+					elected = i
 				}
 			}
 
@@ -147,7 +147,7 @@ func sendMessage(localId uint, remoteId uint,buf bytes.Buffer,ackChannel chan ne
 }
 
 
-func sendResult(elected uint,ackChannel chan network.Acknowledge){
+func sendResult(elected int,ackChannel chan network.Acknowledge){
 
 
 	var buf bytes.Buffer
@@ -180,7 +180,7 @@ func sendAck(localId uint,remoteId uint){
 
 	var buf bytes.Buffer
 
-	if err := gob.NewEncoder(&buf).Encode(network.Acknowledge{localId}); err != nil {
+	if err := gob.NewEncoder(&buf).Encode(network.Acknowledge{}); err != nil {
 		fmt.Println(err)
 	}
 
