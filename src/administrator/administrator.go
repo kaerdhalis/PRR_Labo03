@@ -140,13 +140,14 @@ func sendMessage(localId uint, remoteId uint,buf bytes.Buffer,ackChannel chan ne
 
 	case <-ackChannel:
 
+		fmt.Println("tetsts")
+		return
 	case <- time.After(time.Duration(3*config.GetTransmitDelay())*time.Second):
 
 
 
 		sendMessage(localId,remoteId+1,buf,ackChannel)
 	}
-
 
 }
 
@@ -184,7 +185,7 @@ func sendAck(localId uint,remoteId uint){
 
 	var buf bytes.Buffer
 
-	if err := gob.NewEncoder(&buf).Encode(network.Acknowledge{}); err != nil {
+	if err := gob.NewEncoder(&buf).Encode(network.Acknowledge{true}); err != nil {
 		fmt.Println(err)
 	}
 
@@ -194,30 +195,17 @@ func sendAck(localId uint,remoteId uint){
 
 
 }
+//
+//func pingElected(elected uint){
+//
+//	var buf bytes.Buffer
+//
+//	if err := gob.NewEncoder(&buf).Encode(network.Acknowledge{}); err != nil {
+//		fmt.Println(err)
+//	}
+//
+//	network.ClientWriter(id,elected,buf)
+//
+//
+//}
 
-func pingElected(elected uint){
-
-	var buf bytes.Buffer
-
-	if err := gob.NewEncoder(&buf).Encode(network.Acknowledge{}); err != nil {
-		fmt.Println(err)
-	}
-
-	network.ClientWriter(id,elected,buf)
-
-
-}
-
-
-
-func checkAllProcessAreReady(){
-
-	for i:=0 ;i<int(config.GetNumberOfProc()) ;i++ {
-
-		if uint(i) != id {
-			network.PingAdress(config.GetAdressById(uint(i)), uint(i))
-		}
-	}
-
-	fmt.Println("All Process are Ready")
-}

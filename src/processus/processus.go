@@ -13,8 +13,7 @@ import (
 	"../config"
 	"../administrator"
 	"../network"
-	"bytes"
-	"encoding/gob"
+
 	"fmt"
 	"log"
 	"os"
@@ -37,7 +36,7 @@ func main() {
 	echo := make(chan network.Echo)
 	launchElection := make(chan bool)
 
-	var elected uint
+	//var elected uint
 
 	//get the global configuration of the application
 	config.SetConfiguration()
@@ -51,22 +50,22 @@ func main() {
 
 		time.Sleep(time.Duration(config.GetArtificialDelay()))
 
-		var buf bytes.Buffer
+		//var buf bytes.Buffer
 
-		if err := gob.NewEncoder(&buf).Encode(network.Echo{}); err != nil {
-			fmt.Println(err)
-		}
+		//if err := gob.NewEncoder(&buf).Encode(network.Echo{}); err != nil {
+		//	fmt.Println(err)
+		//}
 
-		network.ClientWriter(uint(id),elected,buf)
+		//network.ClientWriter(uint(id),elected,buf)
 
-		select {
-
-			case <-echo:
-
-			case <- time.After(time.Duration(config.GetArtificialDelay())):
-
-				launchElection<- true
-		}
+		//select {
+		//
+		//	case <-echo:
+		//
+		//	case <- time.After(time.Duration(config.GetArtificialDelay())):
+		//
+		//		//launchElection<- true
+		//}
 
 
 

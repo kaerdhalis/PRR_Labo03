@@ -17,6 +17,7 @@ type Aptitude struct {
 
 type Acknowledge struct {
 
+	Ack bool
 }
 
 type Echo struct{
@@ -89,6 +90,8 @@ func decrypt(conn *net.UDPConn ,msgChannel chan Message, ackChannel chan Acknowl
 		}else if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&echo); err == nil {
 
 		}
+
+
 	}
 }
 
