@@ -1,11 +1,10 @@
 /**
- * Title: 			Labo2 - Mutual exclusion
+ * Title: 			Labo3 - Election
  * File:			processus.go
  * Date:			18.12.12
  * Authors:			Le Guillou Benjamin, Reis de Carvalho Luca
  *
- * Description:		File containing the client side of the process. It can read the inputs of the users and read or
- *                  modify the shared value.
+ * Description:		File containing the applicative task asking periodicaly at the administrator the id of the elected process
  */
 package main
 
@@ -18,7 +17,7 @@ import (
 	"strconv"
 	"time"
 )
-
+var electedId uint
 
 func main() {
 
@@ -30,35 +29,42 @@ func main() {
 	}
 	id,_ := strconv.Atoi(args[0])
 
+	//channel used to fetch the id of the elected process
 	elected := make(chan uint)
 
+	//channel used to start a new election
 	launchElection := make(chan bool)
 
 	//get the global configuration of the application
 	config.SetConfiguration()
 
+	//launch the administrator and the network
 	go administrator.Run(elected, uint(id),launchElection)
 
 	go getElectedProcess(elected)
+
 	fmt.Println("launch election")
 	launchElection <-true
 
+	// main loop, ask periodically for the elected process and launch a new election if the elected is down
+	for {
 
-	for{
+		time.Sleep(config.GetArtificialDelay())
+		if !administrator.CheckOnelected(electedId) {
 
-		time.Sleep(500* config.GetArtificialDelay())
-				fmt.Println("launch election")
-				launchElection<- true
-
+			fmt.Println("launch new election")
+			launchElection <- true
+		}
 	}
 }
 
 func getElectedProcess(elected chan uint){
-	for   {
-		fmt.Printf("processus elu = %d\n",<-elected)
 
+
+	for   {
+
+		electedId=<-elected
 	}
 
 }
-
 

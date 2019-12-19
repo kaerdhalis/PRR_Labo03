@@ -1,3 +1,12 @@
+/**
+ * Title: 			Labo3 - Election
+ * File:			administrator.go
+ * Date:			18.12.12
+ * Authors:			Le Guillou Benjamin, Reis de Carvalho Luca
+ *
+ * Description:		File containing the network interface
+ */
+
 package network
 
 import (
@@ -19,112 +28,88 @@ type Message struct{
 	Elected int
 }
 
+
 type acknowledge struct {
-	Ack bool
+
+}
+
+type Echo struct {
+
 }
 
 func ClientWriter(remoteId uint,buf bytes.Buffer)bool {
 
-	fmt.Println(remoteId)
 	var remoteAddress = config.GetAdressById(remoteId)
 	buffer := make([]byte, 1024)
-	conn, err := net.Dial("udp", remoteAddress.String())
+	conn, err := net.DialUDP("udp", nil,remoteAddress)
 	if err != nil {
-
 		log.Fatal(err)
 	}
 	defer conn.Close()
+	_,err = conn.Write(buf.Bytes())
 
-	_, err = conn.Write(buf.Bytes())
-	if err != nil {
+	deadline := time.Now().Add(config.GetWaitingAckdelay())
+	err = conn.SetReadDeadline(deadline)
 
-		log.Fatal(err)
-	}
-
-	deadline := time.Now().Add(200* time.Millisecond)
-	conn.SetReadDeadline(deadline)
 	var ack acknowledge
-	for {
-		n, err := conn.Read(buffer)
-		if err != nil {
-			if e, ok := err.(net.Error); !ok || !e.Timeout() {
-				fmt.Println(err)
-				fmt.Println(remoteId)
-				//	log.Fatal(err)
-			}
-			fmt.Println(err)
-			return false
-		}
-		if err := gob.NewDecoder(bytes.NewReader(buffer[:n])).Decode(&ack); err != nil {
-			fmt.Println("test")
-			return false
-		}
-		fmt.Println(ack)
 
+	for {
+
+		n ,_,err := conn.ReadFromUDP(buffer)
+
+		if err != nil {
+
+			return false
+		}
+
+		if err := gob.NewDecoder(bytes.NewReader(buffer[:n])).Decode(&ack); err != nil {
+			return false
+		}
 		return true
 	}
-
-
-
 }
 
 func ClientReader(localId uint, msgChannel chan Message) {
 
-
 	var address = config.GetAdressById(localId)
-	conn, err := net.ListenPacket("udp",address.String())
+
+	conn, err := net.ListenUDP("udp", address)
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Listen on " + address.String())
 	defer conn.Close()
-	buffer := make([]byte, 1024)
-	for {
-		n, cliAddr, err := conn.ReadFrom(buffer)
-		if err != nil {
-			log.Fatal(err)
-		}
-		var result Message
-		if err := gob.NewDecoder(bytes.NewReader(buffer[:n])).Decode(&result); err != nil {
-		}
 
-
-
-		var buffer bytes.Buffer
-
-		if err := gob.NewEncoder(&buffer).Encode(acknowledge{true}); err != nil {
-			fmt.Println(err)
-		}
-			_,err = conn.WriteTo(buffer.Bytes(),cliAddr)
-			fmt.Println(err)
-
-		msgChannel <- result
-		}
-
+	decrypt(conn,msgChannel)
 
 }
 
-func decrypt(conn net.PacketConn ,msgChannel chan Message) {
+func decrypt(conn *net.UDPConn ,msgChannel chan Message) {
 
 	buf := make([]byte, 1024)
 	for {
 
 		var result Message
+		var echo Echo
 		n, ip, err := conn.ReadFrom(buf)
 		if err != nil {
 			log.Fatal(err)
 		}
+		var buffer bytes.Buffer
+
+		if err := gob.NewEncoder(&buffer).Encode(acknowledge{}); err != nil {
+		fmt.Println(err)
+		}
 
 		if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&result); err == nil {
-
+				fmt.Println(result)
+			_,err = conn.WriteTo(buffer.Bytes(),ip)
 			msgChannel <- result
-			var buffer bytes.Buffer
+		}
 
-			if err := gob.NewEncoder(&buffer).Encode(acknowledge{true}); err != nil {
-				fmt.Println(err)
-			}
-			_,err := conn.WriteTo(buffer.Bytes(),ip)
-			fmt.Println(err)
+		if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&echo); err == nil {
+
+			_,err = conn.WriteTo(buffer.Bytes(),ip)
 		}
 	}
 

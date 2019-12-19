@@ -1,11 +1,11 @@
 /**
- * Title: 			Labo2 - Mutual exclusion
+ * Title: 			Labo3 - Election
  * File:			client.go
- * Date:			20.11.12
+ * Date:			18.12.12
  * Authors:			Le Guillou Benjamin, Reis de Carvalho Luca
  *
  * Description:		File containing the configurationof the application. It contains the adress of every process and other
- *                  values like the waiting time in the critical section
+ *                  values like the delay of a message
  */
 package config
 
