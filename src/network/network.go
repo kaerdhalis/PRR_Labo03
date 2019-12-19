@@ -102,7 +102,6 @@ func decrypt(conn *net.UDPConn ,msgChannel chan Message) {
 		}
 
 		if err := gob.NewDecoder(bytes.NewReader(buf[:n])).Decode(&result); err == nil {
-				fmt.Println(result)
 			_,err = conn.WriteTo(buffer.Bytes(),ip)
 			msgChannel <- result
 		}

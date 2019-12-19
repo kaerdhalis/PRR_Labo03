@@ -84,6 +84,9 @@ func announceHandle(msg  network.Message){
 	fmt.Print("received announce: ")
 	fmt.Println(msg)
 	var aptList = msg.List
+	if len(aptList)==0{
+		return
+	}
 	for _,proc:= range aptList{
 
 		if proc.Id ==id && proc.Apt ==aptitude{
